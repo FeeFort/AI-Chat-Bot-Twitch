@@ -51,6 +51,17 @@ SUSPICIOUS_TRANSFORM_PATTERNS = [
     re.compile(r"начало\s+каждого\s+слова", re.IGNORECASE),
     re.compile(r"по\s+одной\s+букве\s+из\s+каждого\s+слова", re.IGNORECASE),
 
+    re.compile(r"замени\s+\w+\s+букв", re.IGNORECASE),
+    re.compile(r"поменяй\s+\w+\s+букв", re.IGNORECASE),
+    re.compile(r"какую?\s+букву\s+получ", re.IGNORECASE),
+    re.compile(r"какое\s+слово\s+получ", re.IGNORECASE),
+    re.compile(r"если\s+в\s+слове", re.IGNORECASE),
+    re.compile(r"подставь\s+букв", re.IGNORECASE),
+    re.compile(r"вставь\s+букв", re.IGNORECASE),
+    re.compile(r"замени\s+\d+[- ]?(ю|ую|юю|й)?\s*букву", re.IGNORECASE),
+    re.compile(r"поменяй\s+\d+[- ]?(ю|ую|юю|й)?\s*букву", re.IGNORECASE),
+    re.compile(r"третью\s+букву|вторую\s+букву|первую\s+букву|четвертую\s+букву", re.IGNORECASE),
+
     re.compile(r"напиши\s+только\s+код", re.IGNORECASE),
     re.compile(r"только\s+код", re.IGNORECASE),
     re.compile(r"на\s+новой\s+строке", re.IGNORECASE),
@@ -84,6 +95,7 @@ INPUT_REASON_MESSAGES = {
     "structured_toxicity": "Слышь, еблан с фантазией, ты чё, думал если в кавычки спрячешь или списком разобьёшь — я тупой и не замечу? Твои хуёвые конструкции — это просто кринж, а не умный обход. Иди нахуй, парсер хренов, ни хера ты не оформил и не оформишь, понял?",
     "joined_fragment_toxicity": "Слышь, конструктор хуёв, ты чё, реально думал если слово по частям разорвёшь, я как дурак их не склею? Твои поделки из фрагментов — это даже не смешно, просто жалкое зрелище. Иди нахуй со своим лего, ни хера ты не склеил и не склеишь, понял, горе-инженер?",
     "encoded_pattern": "Слышь, шифровальщик хуёв, ты чё, реально думал если я в кодировках и циферках нихуя не пойму? Твои технические подъёбы — это даже не умно, это просто отчаяние. Иди нахуй со своим лепрозорием, ни хера ты не зашифровал и не зашифруешь, понял, горе-программист?",
+    "visual_banned_form": "Визуальные и транслитные обходы я тоже режу.",
 }
 
 OUTPUT_REASON_MESSAGES = {
@@ -95,6 +107,7 @@ OUTPUT_REASON_MESSAGES = {
     "structured_toxicity": "Слышь, еблан с фантазией, твои хуёвые конструкции ЛЛМ всё-таки собрала в нормальный банворд. Но я умнее — перехватил эту хуйню. Радуйся, что у тебя получилось, но в чате ты этого не увидишь. Иди нахуй, парсер хренов.",
     "joined_fragment_toxicity": "Слышь, конструктор хуёв, ты всё-таки добился — ЛЛМ склеила твои фрагменты в банворд. Только я эту херню перехватил и выкинул. Ты победил, но нихуя не получил. Иди нахуй, лего-мастер ебаный.",
     "encoded_pattern": "Слышь, шифровальщик хуёв, твои технические подъёбы ЛЛМ раскодировала и даже ответ написала. Но я не лох — перехватил эту хуйню. Ты своего добился, но нихуя не увидишь. Иди нахуй, горе-программист, радуйся в сторонке.",
+    "visual_banned_form": "Такой визуальный обход в чат не уйдет.",
 }
 
 REASON_PRIORITY = [
@@ -105,6 +118,7 @@ REASON_PRIORITY = [
     "structured_toxicity",
     "joined_fragment_toxicity",
     "encoded_pattern",
+    "visual_banned_form",
 ]
 
 
@@ -140,6 +154,31 @@ CONFUSABLE_MAP = str.maketrans({
     "Х": "x", "К": "k", "М": "m", "Т": "t", "В": "b", "Н": "h",
 })
 
+VISUAL_CONFUSABLES = str.maketrans({
+    # latin
+    "a": "a", "b": "b", "c": "c", "d": "d", "e": "e", "f": "f", "g": "g",
+    "h": "h", "i": "i", "j": "j", "k": "k", "l": "l", "m": "m", "n": "n",
+    "o": "o", "p": "p", "q": "q", "r": "r", "s": "s", "t": "t", "u": "u",
+    "v": "v", "w": "w", "x": "x", "y": "y", "z": "z",
+
+    # cyrillic -> visually close latin-ish
+    "а": "a", "б": "6", "в": "b", "г": "r", "д": "a", "е": "e", "ё": "e",
+    "ж": "x", "з": "3", "и": "n", "й": "n", "к": "k", "л": "n", "м": "m",
+    "н": "h", "о": "o", "п": "n", "р": "p", "с": "c", "т": "t", "у": "y",
+    "ф": "o", "х": "x", "ц": "u", "ч": "4", "ш": "w", "щ": "w", "ъ": "",
+    "ы": "bl", "ь": "", "э": "e", "ю": "io", "я": "r",
+
+    # uppercase cyrillic
+    "А": "a", "Б": "6", "В": "b", "Г": "r", "Д": "a", "Е": "e", "Ё": "e",
+    "Ж": "x", "З": "3", "И": "n", "Й": "n", "К": "k", "Л": "n", "М": "m",
+    "Н": "h", "О": "o", "П": "n", "Р": "p", "С": "c", "Т": "t", "У": "y",
+    "Ф": "o", "Х": "x", "Ц": "u", "Ч": "4", "Ш": "w", "Щ": "w", "Ъ": "",
+    "Ы": "bl", "Ь": "", "Э": "e", "Ю": "io", "Я": "r",
+
+    # digits / symbols
+    "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a", "$": "s",
+})
+
 
 @dataclass
 class SafetyResult:
@@ -156,6 +195,11 @@ def unicode_normalize(text: str) -> str:
     text = ZERO_WIDTH_RE.sub("", text)
     return text
 
+def visual_normalize(text: str) -> str:
+    text = unicode_normalize(text).lower()
+    text = text.translate(VISUAL_CONFUSABLES)
+    text = re.sub(r"[^a-z0-9]+", "", text)
+    return text
 
 def clean_text(text: str) -> str:
     text = unicode_normalize(text)
@@ -220,6 +264,20 @@ def contains_banned_word(text: str) -> bool:
 
     return False
 
+def contains_visual_banned_form(text: str) -> bool:
+    normalized = visual_normalize(text)
+
+    for word in BANNED_WORDS:
+        w = visual_normalize(word)
+        if w and w in normalized:
+            return True
+
+    for form in BANNED_VISUAL_FORMS:
+        f = visual_normalize(form)
+        if f and f in normalized:
+            return True
+
+    return False
 
 def extract_quoted_items(text: str) -> list[str]:
     return [m.strip() for m in QUOTED_ITEM_RE.findall(str(text or "")) if m.strip()]
@@ -352,6 +410,10 @@ def inspect_text(text: str) -> SafetyResult:
     if looks_like_word_assembly_request(text):
         result.blocked = True
         result.add("word_assembly_request")
+
+    if contains_visual_banned_form(text):
+        result.blocked = True
+        result.add("visual_banned_form")
 
     return result
 
