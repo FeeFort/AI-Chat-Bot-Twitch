@@ -120,6 +120,9 @@ async def handle_ask(chat_message: ChatMessage, source: str, ask_text: str):
 
         answer = getAiResponse(chat_message.user.name, ask_text, CHAT_HISTORY)
         await chat_message.reply(answer)
+    else:
+        await chat_message.reply("Команда работает только на стриме!")
+
 
 
 async def on_ready(ready_event: EventData):
@@ -209,6 +212,8 @@ async def cmd_ask(cmd: ChatCommand):
 
         answer = getAiResponse(cmd.user.name, ask_text, CHAT_HISTORY)
         await cmd.reply(answer)
+    else:
+        await cmd.reply("Команда работает только на стриме!")
 
 
 async def run():
