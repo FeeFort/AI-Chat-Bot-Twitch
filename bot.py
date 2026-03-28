@@ -18,6 +18,8 @@ load_dotenv()
 CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
 CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET")
 CHANNEL_NAME = os.getenv("TWITCH_CHANNEL_NAME")
+TOKEN = os.getenv("TWITCH_USER_ACCESS_TOKEN")
+REFRESH_TOKEN = os.getenv("TWITCH_USER_REFRESH_TOKEN")
 
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
@@ -197,11 +199,7 @@ async def cmd_ask(cmd: ChatCommand):
 
 async def run():
     twitch = await Twitch(CLIENT_ID, CLIENT_SECRET)
-
-    auth = UserAuthenticator(twitch, USER_SCOPE)
-    token, refresh_token = await auth.authenticate()
-
-    await twitch.set_user_authentication(token, USER_SCOPE, refresh_token)
+    await twitch.set_user_authentication(TOKEN, USER_SCOPE, REFRESH_TOKEN)
 
     chat = await Chat(twitch)
 

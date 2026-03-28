@@ -1,8 +1,26 @@
-﻿from safety import should_block_user_input, get_block_message
+﻿import os
+import asyncio
+from twitchAPI.twitch import Twitch
+from twitchAPI.oauth import UserAuthenticator
+from twitchAPI.type import AuthScope
+from dotenv import load_dotenv
 
-while True:
-    user_text = input()
-    user_check = should_block_user_input(user_text)
-    if user_check.blocked:
-        print("INPUT BLOCKED:", user_check.reasons, "|", user_text)
-        print(get_block_message(user_check, stage="input"))
+load_dotenv()
+
+CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
+CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET")
+USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
+
+async def main():
+    twitch = await Twitch(CLIENT_ID, CLIENT_SECRET)
+    auth = UserAuthenticator(twitch, USER_SCOPE)
+    token, refresh_token = await auth.authenticate()
+
+    print("ACCESS TOKEN:")
+    print(token)
+    print("\nREFRESH TOKEN:")
+    print(refresh_token)
+
+    await twitch.close()
+
+asyncio.run(main())
