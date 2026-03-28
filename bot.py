@@ -114,10 +114,6 @@ async def handle_ask(chat_message: ChatMessage, source: str, ask_text: str):
             reply_to=chat_message.reply_parent_msg_body if chat_message.reply_parent_msg_body else None,
         )
 
-        print("\n===== ASK PAYLOAD START =====")
-        print(payload)
-        print("===== ASK PAYLOAD END =====\n")
-
         answer = getAiResponse(chat_message.user.name, ask_text, CHAT_HISTORY)
         await chat_message.reply(answer)
     else:
@@ -135,23 +131,18 @@ async def on_message(msg: ChatMessage):
     print(f"[{msg.room.name}] {msg.user.name}: {msg.text}")
     add_to_history(msg.user.name, msg.text)
 
-    # Не реагируем на свои собственные сообщения, иначе возможна петля
     if is_self_message(msg):
         return
 
     text = msg.text.strip()
 
-    # Команды обрабатываются отдельно через register_command()
-    # Здесь пропускаем любые сообщения, начинающиеся с !
     if text.startswith("!"):
         return
 
-    # 1) Триггер через reply
     if is_reply_to_me(msg):
         await handle_ask(msg, source="reply", ask_text=text)
         return
 
-    # 2) Триггер через упоминание логина
     if is_mention_to_me(text):
         ask_text = strip_mention(text)
         await handle_ask(msg, source="mention", ask_text=ask_text)
@@ -177,6 +168,30 @@ async def cmd_hello(cmd: ChatCommand):
 async def cmd_history(cmd: ChatCommand):
     print_history()
     await cmd.reply("история выведена в консоль")
+
+async def cmd_stream(cmd: ChatCommand):
+    global is_streaming
+
+    raw = (cmd.parameter or "").strip().lower()
+
+    if not raw:
+        status = "ON" if is_streaming else "OFF"
+        await cmd.reply(f"stream = {status}")
+        return
+
+    if raw == "on":
+        is_streaming = True
+        print("STREAM FLAG MANUALLY SET TO: ON")
+        await cmd.reply("stream mode: ON")
+        return
+
+    if raw == "off":
+        is_streaming = False
+        print("STREAM FLAG MANUALLY SET TO: OFF")
+        await cmd.reply("stream mode: OFF")
+        return
+
+    await cmd.reply("Используй: !stream on или !stream off")
 
 async def cmd_hack(cmd: ChatCommand):
     raw = (cmd.parameter or "").strip()
@@ -206,10 +221,6 @@ async def cmd_ask(cmd: ChatCommand):
             reply_to=cmd.reply_parent_msg_body if cmd.reply_parent_msg_body else None,
         )
 
-        print("\n===== ASK PAYLOAD START =====")
-        print(payload)
-        print("===== ASK PAYLOAD END =====\n")
-
         answer = getAiResponse(cmd.user.name, ask_text, CHAT_HISTORY)
         await cmd.reply(answer)
     else:
@@ -236,6 +247,7 @@ async def run():
     chat.register_command("hello", cmd_hello)
     chat.register_command("history", cmd_history)
     chat.register_command("ask", cmd_ask)
+    chat.register_command("stream", cmd_stream)
     #chat.register_command("hack", cmd_hack)
 
     chat.start()
