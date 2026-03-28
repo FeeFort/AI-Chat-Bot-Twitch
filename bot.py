@@ -28,7 +28,7 @@ MAX_HISTORY = 100
 CHAT_HISTORY = deque(maxlen=MAX_HISTORY)
 
 # Логин, на который реагируем как на "упоминание бота"
-BOT_LOGIN = "dr1ma0"
+BOT_LOGIN = "pa1kamod"
 
 # Ищем "pa1ka" или "@pa1ka" как отдельное слово
 MENTION_PATTERN = re.compile(rf"(?<!\w)@?{re.escape(BOT_LOGIN)}(?!\w)", re.IGNORECASE)
