@@ -9,7 +9,12 @@ load_dotenv()
 
 CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
 CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET")
-USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
+
+USER_SCOPE = [
+    AuthScope.USER_BOT,
+    AuthScope.USER_READ_CHAT,
+    AuthScope.USER_WRITE_CHAT,
+]
 
 async def main():
     twitch = await Twitch(CLIENT_ID, CLIENT_SECRET)

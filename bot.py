@@ -5,12 +5,12 @@ import random
 from collections import deque
 from datetime import datetime
 
+import aiohttp
 from pathlib import Path
 from dotenv import load_dotenv
 from twitchAPI.twitch import Twitch
 from twitchAPI.oauth import UserAuthenticator
-from twitchAPI.type import AuthScope, ChatEvent
-from twitchAPI.chat import Chat, EventData, ChatMessage, ChatCommand
+from twitchAPI.type import AuthScope
 from twitchAPI.eventsub.websocket import EventSubWebsocket
 from twitchAPI.helper import first
 from get_response import getAiResponse
@@ -23,7 +23,11 @@ CHANNEL_NAME = os.getenv("TWITCH_CHANNEL_NAME")
 TOKEN = os.getenv("TWITCH_USER_ACCESS_TOKEN")
 REFRESH_TOKEN = os.getenv("TWITCH_USER_REFRESH_TOKEN")
 
-USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
+USER_SCOPE = [
+    AuthScope.USER_BOT,
+    AuthScope.USER_READ_CHAT,
+    AuthScope.USER_WRITE_CHAT,
+]
 
 # Храним последние N сообщений в памяти
 MAX_HISTORY = 100
@@ -37,6 +41,155 @@ MENTION_PATTERN = re.compile(rf"(?<!\w)@?{re.escape(BOT_LOGIN)}(?!\w)", re.IGNOR
 MENTION_RE = re.compile(r"^@?([a-zA-Z0-9_]{4,25})(?:\s+(.*))?$")
 
 is_streaming = False
+
+TWITCH_APP = None
+BROADCASTER_ID = None
+BOT_USER_ID = None
+APP_ACCESS_TOKEN = None
+
+
+class _CompatChatRoom:
+    def __init__(self, name: str):
+        self.name = name
+
+
+class _CompatChatUser:
+    def __init__(self, user_id: str, name: str, mod: bool = False):
+        self.id = user_id
+        self.name = name
+        self.mod = mod
+
+
+async def get_app_access_token() -> str:
+    url = "https://id.twitch.tv/oauth2/token"
+    data = {
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "grant_type": "client_credentials",
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, data=data) as resp:
+            resp.raise_for_status()
+            payload = await resp.json()
+            return payload["access_token"]
+
+
+async def send_chat_message_api(
+    broadcaster_id: str,
+    sender_id: str,
+    message: str,
+    reply_parent_message_id: str | None = None,
+):
+    global APP_ACCESS_TOKEN
+
+    if APP_ACCESS_TOKEN is None:
+        APP_ACCESS_TOKEN = await get_app_access_token()
+
+    url = "https://api.twitch.tv/helix/chat/messages"
+
+    body = {
+        "broadcaster_id": broadcaster_id,
+        "sender_id": sender_id,
+        "message": message,
+    }
+
+    if reply_parent_message_id:
+        body["reply_parent_message_id"] = reply_parent_message_id
+
+    headers = {
+        "Client-Id": CLIENT_ID,
+        "Authorization": f"Bearer {APP_ACCESS_TOKEN}",
+        "Content-Type": "application/json",
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=body) as resp:
+            if resp.status == 401:
+                APP_ACCESS_TOKEN = await get_app_access_token()
+                headers["Authorization"] = f"Bearer {APP_ACCESS_TOKEN}"
+
+                async with session.post(url, headers=headers, json=body) as retry_resp:
+                    retry_resp.raise_for_status()
+                    return await retry_resp.json()
+
+            resp.raise_for_status()
+            return await resp.json()
+
+
+class ChatMessage:
+    def __init__(
+        self,
+        twitch: Twitch,
+        broadcaster_id: str,
+        sender_id: str,
+        room_name: str,
+        user_id: str,
+        user_name: str,
+        text: str,
+        message_id: str | None = None,
+        reply_parent_msg_id: str | None = None,
+        reply_parent_msg_body: str | None = None,
+        reply_parent_user_login: str | None = None,
+        user_mod: bool = False,
+    ):
+        self._twitch = twitch
+        self._broadcaster_id = broadcaster_id
+        self._sender_id = sender_id
+
+        self.room = _CompatChatRoom(room_name)
+        self.user = _CompatChatUser(user_id=user_id, name=user_name, mod=user_mod)
+
+        self.text = text
+        self.id = message_id
+
+        self.reply_parent_msg_id = reply_parent_msg_id
+        self.reply_parent_msg_body = reply_parent_msg_body
+        self.reply_parent_user_login = reply_parent_user_login
+
+    async def reply(self, text: str):
+        await send_chat_message_api(
+            self._broadcaster_id,
+            self._sender_id,
+            text,
+            reply_parent_message_id=self.id,
+        )
+
+
+class ChatCommand:
+    def __init__(
+        self,
+        twitch: Twitch,
+        broadcaster_id: str,
+        sender_id: str,
+        user_id: str,
+        user_name: str,
+        parameter: str,
+        message_id: str | None = None,
+        reply_parent_msg_id: str | None = None,
+        reply_parent_msg_body: str | None = None,
+        reply_parent_user_login: str | None = None,
+        user_mod: bool = False,
+    ):
+        self._twitch = twitch
+        self._broadcaster_id = broadcaster_id
+        self._sender_id = sender_id
+
+        self.user = _CompatChatUser(user_id=user_id, name=user_name, mod=user_mod)
+        self.parameter = parameter
+
+        self.id = message_id
+        self.reply_parent_msg_id = reply_parent_msg_id
+        self.reply_parent_msg_body = reply_parent_msg_body
+        self.reply_parent_user_login = reply_parent_user_login
+
+    async def reply(self, text: str):
+        await send_chat_message_api(
+            self._broadcaster_id,
+            self._sender_id,
+            text,
+            reply_parent_message_id=self.id,
+        )
 
 
 def add_to_history(username: str, text: str):
@@ -105,6 +258,84 @@ def generate_placeholder_answer(payload: dict) -> str:
     return f"[stub:{source}] {username}: {text}"
 
 
+def _has_badge(badges, badge_name: str) -> bool:
+    for badge in badges or []:
+        if getattr(badge, "set_id", "").lower() == badge_name.lower():
+            return True
+    return False
+
+
+def _build_chat_message(event) -> ChatMessage:
+    reply = getattr(event, "reply", None)
+    badges = getattr(event, "badges", None)
+
+    return ChatMessage(
+        twitch=TWITCH_APP,
+        broadcaster_id=BROADCASTER_ID,
+        sender_id=BOT_USER_ID,
+        room_name=event.broadcaster_user_login,
+        user_id=event.chatter_user_id,
+        user_name=event.chatter_user_login,
+        text=event.message.text,
+        message_id=event.message_id,
+        reply_parent_msg_id=getattr(reply, "parent_message_id", None) if reply else None,
+        reply_parent_msg_body=getattr(reply, "parent_message_body", None) if reply else None,
+        reply_parent_user_login=getattr(reply, "parent_user_login", None) if reply else None,
+        user_mod=_has_badge(badges, "moderator"),
+    )
+
+
+def _build_chat_command(msg: ChatMessage) -> ChatCommand:
+    parts = msg.text.split(" ", 1)
+    parameter = parts[1] if len(parts) > 1 else ""
+
+    return ChatCommand(
+        twitch=TWITCH_APP,
+        broadcaster_id=BROADCASTER_ID,
+        sender_id=BOT_USER_ID,
+        user_id=msg.user.id,
+        user_name=msg.user.name,
+        parameter=parameter,
+        message_id=msg.id,
+        reply_parent_msg_id=msg.reply_parent_msg_id,
+        reply_parent_msg_body=msg.reply_parent_msg_body,
+        reply_parent_user_login=msg.reply_parent_user_login,
+        user_mod=msg.user.mod,
+    )
+
+
+async def _dispatch_command(msg: ChatMessage) -> bool:
+    text = msg.text.strip()
+    if not text.startswith("!"):
+        return False
+
+    command_name = text[1:].split(" ", 1)[0].lower()
+    cmd = _build_chat_command(msg)
+
+    if command_name == "ping":
+        await cmd_ping(cmd)
+        return True
+
+    if command_name == "hello":
+        await cmd_hello(cmd)
+        return True
+
+    if command_name == "history":
+        await cmd_history(cmd)
+        return True
+
+    if command_name == "ask":
+        await cmd_ask(cmd)
+        return True
+
+    if command_name == "stream":
+        await cmd_stream(cmd)
+        return True
+
+    #chat.register_command("hack", cmd_hack)
+    return True
+
+
 async def handle_ask(chat_message: ChatMessage, source: str, ask_text: str):
     if is_streaming:
         payload = make_ask_payload(
@@ -120,24 +351,19 @@ async def handle_ask(chat_message: ChatMessage, source: str, ask_text: str):
         await chat_message.reply("Команда работает только на стриме!")
 
 
+async def on_message(event):
+    msg = _build_chat_message(event.event)
 
-async def on_ready(ready_event: EventData):
-    print("Бот подключен. Захожу в канал...")
-    await ready_event.chat.join_room(CHANNEL_NAME)
-    print(f"Подключено к каналу: {CHANNEL_NAME}")
-
-
-async def on_message(msg: ChatMessage):
     print(f"[{msg.room.name}] {msg.user.name}: {msg.text}")
     add_to_history(msg.user.name, msg.text)
 
     if is_self_message(msg):
         return
 
-    text = msg.text.strip()
-
-    if text.startswith("!"):
+    if await _dispatch_command(msg):
         return
+
+    text = msg.text.strip()
 
     if is_reply_to_me(msg):
         await handle_ask(msg, source="reply", ask_text=text)
@@ -148,9 +374,11 @@ async def on_message(msg: ChatMessage):
         await handle_ask(msg, source="mention", ask_text=ask_text)
         return
 
+
 async def on_stream_online(data):
     global is_streaming
     is_streaming = True
+
 
 async def on_stream_offline(data):
     global is_streaming
@@ -168,6 +396,7 @@ async def cmd_hello(cmd: ChatCommand):
 async def cmd_history(cmd: ChatCommand):
     print_history()
     await cmd.reply("история выведена в консоль")
+
 
 async def cmd_stream(cmd: ChatCommand):
     global is_streaming
@@ -199,6 +428,7 @@ async def cmd_stream(cmd: ChatCommand):
         return
 
     await cmd.reply("Используй: !stream on или !stream off")
+
 
 async def cmd_hack(cmd: ChatCommand):
     raw = (cmd.parameter or "").strip()
@@ -235,34 +465,32 @@ async def cmd_ask(cmd: ChatCommand):
 
 
 async def run():
-    twitch = await Twitch(CLIENT_ID, CLIENT_SECRET)
+    global TWITCH_APP, BROADCASTER_ID, BOT_USER_ID
+
+    twitch = await Twitch(CLIENT_ID, CLIENT_SECRET, authenticate_app=False)
     await twitch.set_user_authentication(TOKEN, USER_SCOPE, REFRESH_TOKEN)
+
+    TWITCH_APP = twitch
 
     user = await first(twitch.get_users(logins=CHANNEL_NAME))
     BROADCASTER_ID = user.id
 
-    chat = await Chat(twitch)
+    bot_user = await first(twitch.get_users())
+    BOT_USER_ID = bot_user.id
+
     eventsub = EventSubWebsocket(twitch)
     eventsub.start()
 
-    chat.register_event(ChatEvent.READY, on_ready)
-    chat.register_event(ChatEvent.MESSAGE, on_message)
+    print("Бот подключен. Подписываюсь на EventSub...")
+    await eventsub.listen_channel_chat_message(BROADCASTER_ID, BOT_USER_ID, on_message)
     await eventsub.listen_stream_online(BROADCASTER_ID, on_stream_online)
     await eventsub.listen_stream_offline(BROADCASTER_ID, on_stream_offline)
-
-    chat.register_command("ping", cmd_ping)
-    chat.register_command("hello", cmd_hello)
-    chat.register_command("history", cmd_history)
-    chat.register_command("ask", cmd_ask)
-    chat.register_command("stream", cmd_stream)
-    #chat.register_command("hack", cmd_hack)
-
-    chat.start()
+    print(f"Подключено к каналу: {CHANNEL_NAME}")
 
     try:
         await asyncio.Event().wait()
     finally:
-        chat.stop()
+        await eventsub.stop()
         await twitch.close()
 
 
