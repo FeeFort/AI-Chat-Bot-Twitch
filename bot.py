@@ -172,6 +172,13 @@ async def cmd_history(cmd: ChatCommand):
 async def cmd_stream(cmd: ChatCommand):
     global is_streaming
 
+    is_broadcaster = cmd.user.name.lower() == CHANNEL_NAME.lower()
+    is_moderator = cmd.user.mod
+
+    if not (is_broadcaster or is_moderator):
+        await cmd.reply("Не твоя кнопка.")
+        return
+
     raw = (cmd.parameter or "").strip().lower()
 
     if not raw:
