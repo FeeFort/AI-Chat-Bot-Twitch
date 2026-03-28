@@ -215,7 +215,7 @@ async def run():
     chat.start()
 
     try:
-        input("Нажми ENTER для остановки бота...\n")
+        await asyncio.Event().wait()
     finally:
         chat.stop()
         await twitch.close()
