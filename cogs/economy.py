@@ -91,7 +91,7 @@ class EconomyCog:
                 return
 
             await self.find_or_create_user(target_user_id)
-            user = collection.find_one({"_id": cmd.user.id})
+            user = collection.find_one({"_id": target_user_id})
             await cmd.reply(f"@{cmd.user.name}, баланс пользователя @{target_login}: {user["balance"]} монет.")
 
 
