@@ -76,9 +76,23 @@ class EconomyCog:
             await cmd.reply(f"У пользователя @{target_login} снято {amount} монет.")
 
     async def cmd_balance(self, cmd):
-        await self.find_or_create_user(cmd.user.id)
-        user = collection.find_one({"_id": cmd.user.id})
-        await cmd.reply(f"@{cmd.user.name}, ваш баланс: {user["balance"]} монет.")
+        parts = cmd.parameter.strip().split()
+
+        if len(parts) == 0:
+            await self.find_or_create_user(cmd.user.id)
+            user = collection.find_one({"_id": cmd.user.id})
+            await cmd.reply(f"@{cmd.user.name}, ваш баланс: {user["balance"]} монет.")
+        else:
+            target_login = parts[0].lstrip("@").lower()
+            target_user_id = await self.get_user_id_by_login(self.bot.CLIENT_ID, self.bot.APP_ACCESS_TOKEN, target_login)
+
+            if target_user_id is None:
+                await cmd.reply("Пользователь не найден")
+                return
+
+            await self.find_or_create_user(target_user_id)
+            user = collection.find_one({"_id": cmd.user.id})
+            await cmd.reply(f"@{cmd.user.name}, баланс пользователя @{target_login}: {user["balance"]} монет.")
 
 
 def setup(bot):
