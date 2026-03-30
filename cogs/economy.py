@@ -1,7 +1,7 @@
 import aiohttp
 from pymongo import MongoClient
 
-client = MongoClient("mongodb://localhost:27017/")
+client = MongoClient("mongodb://FeeFort:FeeForti10003@127.0.0.1:27017/Snaply?authSource=admin")
 
 db = client["pa1ka"]
 collection = db["Economy"]
