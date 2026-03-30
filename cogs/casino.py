@@ -151,17 +151,21 @@ class CasinoCog:
             await cmd.reply("Использование: !casino [ставка]")
             return
 
-        amount = int(parts[0])
+        bet = int(parts[0])
 
-        if amount < 100:
+        if bet < 100:
             await cmd.reply("Ставка не может быть меньше 100!")
             return
 
         await self.find_or_create_user(cmd.user.id)
 
+        user = collection.find_one({"_id": cmd.user.id})
+        if user["balance"] < bet:
+            await cmd.reply("Вы не можете поставить ставку, которая больше вашего баланса!")
+            return
+
         self.validate_loot_table(LOOT_TABLE)
 
-        bet = 100
         result = self.spin_slots(bet, LOOT_TABLE)
 
         collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": -bet}})
