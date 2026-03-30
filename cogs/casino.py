@@ -93,24 +93,24 @@ class CasinoCog:
 
         # Тройные совпадения с разными джекпотами
         if slot1 == slot2 == slot3 == "7️⃣":
-            comment = "СУПЕРДЖЕКПОТ! НЕВЕРОЯТНО! 🎉"
+            comment = f"СУПЕРДЖЕКПОТ! НЕВЕРОЯТНО! Вам начислено {bet * 1000} 🎉"
             multiplier = 1000
 
         elif slot1 == slot2 == slot3 == "💎":
-            comment = "АЛМАЗНЫЙ ДЖЕКПОТ! ВОТ ЭТО УДАЧА! 💎"
+            comment = f"АЛМАЗНЫЙ ДЖЕКПОТ! ВОТ ЭТО УДАЧА! Вам начислено {bet * 500} 💎"
             multiplier = 500
 
         elif slot1 == slot2 == slot3 == "👑":
-            comment = "КОРОЛЕВСКИЙ СУПЕРДЖЕКПОТ! 👑"
+            comment = f"КОРОЛЕВСКИЙ СУПЕРДЖЕКПОТ, вам начислено {bet * 100}! 👑"
             multiplier = 100
 
         elif slot1 == slot2 == slot3:
-            comment = "ДЖЕКПОТ! Победитель по жизни! 🍀"
+            comment = f"ДЖЕКПОТ! Победитель по жизни, вам начислено {bet * 2}! 🍀"
             multiplier = 2
 
         # Любая пара
         elif slot1 == slot2 or slot2 == slot3 or slot1 == slot3:
-            comment = "Утешительный приз! Хоть что-то 🙂"
+            comment = f"Утешительный приз, вам будет возвращена половина вашей ставки: {bet * 0.5}! Хоть что-то 🙂"
             multiplier = 0.5
 
         # Ничего
