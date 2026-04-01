@@ -56,7 +56,7 @@ class RouletteCog:
 
         if roll_expect == roll:
             collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": bet}})
-            await cmd.reply(f"Рулетка сыграла, победа! Вам начислено pa1kaCoin {bet * 2} монет.")
+            await cmd.reply(f"Рулетка сыграла! Вам начислено pa1kaCoin {bet * 2} монет.")
         else:
             collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": -bet}})
             await cmd.reply(f"Рулетка не сыграла.")
