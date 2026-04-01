@@ -17,7 +17,7 @@ from twitchAPI.eventsub.websocket import EventSubWebsocket
 from twitchAPI.helper import first
 
 from get_response import getAiResponse
-
+from pymongo import MongoClient
 
 # =========================================================
 # env/config
@@ -31,6 +31,13 @@ USER_SCOPE = [
     AuthScope.USER_WRITE_CHAT,
 ]
 
+MONGO_URI = os.getenv("MONGO_URI")
+client = MongoClient(MONGO_URI)
+
+db = client["pa1ka"]
+collection = db["Economy"]
+
+print("Подключение успешно")
 
 # =========================================================
 # compatibility classes
@@ -92,6 +99,13 @@ class ChatMessage:
             reply_parent_message_id=self.id,
         )
 
+    async def send(self, text: str):
+        await self.bot.send_chat_message_api(
+            self._broadcaster_id,
+            self._sender_id,
+            text,
+        )
+
 
 class ChatCommand:
     def __init__(
@@ -128,6 +142,13 @@ class ChatCommand:
             self._sender_id,
             text,
             reply_parent_message_id=self.id,
+        )
+
+    async def send(self, text: str):
+        await self.bot.send_chat_message_api(
+            self._broadcaster_id,
+            self._sender_id,
+            text,
         )
 
 
@@ -410,6 +431,26 @@ class Bot:
         self.is_streaming = False
         print("STREAM IS OFFLINE!")
 
+    async def find_or_create_user(self, user_id):
+        user = collection.find_one({"_id": user_id})
+        if user is None:
+            collection.insert_one({
+                "_id": user_id,
+                "balance": 0
+            })
+
+    async def on_channel_points_redeem(self, data):
+        event = data.event
+
+        if event.reward.title == "5000":
+            await self.find_or_create_user(event.chatter_user_id)
+            collection.update_one({"_id": event.chatter_user_id}, {"$inc": {"balance": 5000}})
+            await self.send_chat_message_api(
+                self.BROADCASTER_ID,
+                self.BOT_USER_ID,
+                f"@{event.user_login} купил награду: {event.reward.title}. На баланс начислено 5000 монет.",
+            )
+
     # =====================================================
     # runtime
     # =====================================================
@@ -437,6 +478,7 @@ class Bot:
         await eventsub.listen_channel_chat_message(self.BROADCASTER_ID, self.BOT_USER_ID, self.on_message)
         await eventsub.listen_stream_online(self.BROADCASTER_ID, self.on_stream_online)
         await eventsub.listen_stream_offline(self.BROADCASTER_ID, self.on_stream_offline)
+        #await eventsub.listen_channel_points_custom_reward_redemption_add(self.BROADCASTER_ID, self.on_channel_points_redeem)
         print(f"Подключено к каналу: {self.CHANNEL_NAME}")
 
         try:

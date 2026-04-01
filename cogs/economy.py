@@ -1,7 +1,12 @@
+import os
 import aiohttp
 from pymongo import MongoClient
+from dotenv import load_dotenv
 
-client = MongoClient("mongodb://FeeFort:FeeForti10003@127.0.0.1:27017/Snaply?authSource=admin")
+load_dotenv()
+
+MONGO_URI = os.getenv("MONGO_URI")
+client = MongoClient(MONGO_URI)
 
 db = client["pa1ka"]
 collection = db["Economy"]
