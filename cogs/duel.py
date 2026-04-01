@@ -129,7 +129,7 @@ class DuelCog:
             await cmd.reply("Использование: !duel @тег [ставка] ИЛИ !duel accept/decline")
             return
         elif len(parts) == 1:
-            await self.handle_duel_response(cmd.user.id, parts[0], cmd)
+            await self.handle_duel_response(cmd.user.id, cmd.user.name, parts[0], cmd)
         else:
             target = parts[0].lstrip("@").lower()
             bet = int(parts[1])
