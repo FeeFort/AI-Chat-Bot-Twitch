@@ -67,7 +67,7 @@ class DuelCog:
         Создание дуэли и ожидание ответа target_id
         """
         if target_id in self.active_duels:
-            await cmd.send(f"<@{challenger_name}>, {target_name} уже имеет активный вызов!")
+            await cmd.send(f"<@{challenger_id}>, {target_name} уже имеет активный вызов!")
             return
 
         duel = {
@@ -108,14 +108,14 @@ class DuelCog:
             collection.update_one({"_id": winner}, {"$inc": {"balance": duel['bet'] * 2}})
             collection.update_one({"_id": loser}, {"$inc": {"balance": -duel['bet']}})
 
-            await cmd.send(f"Дуэль! Победитель: @{winner}, он получает {duel['bet'] * 2} монет! ")
+            await cmd.send(f"Дуэль! Победитель: <@{winner}>, он получает {duel['bet'] * 2} монет! ")
 
         elif message.lower() == "decline":
             duel["task"].cancel()
             self.active_duels.pop(user_id)
-            await cmd.send(f"@{user_id} отклонил дуэль с @{duel['challenger']}.")
+            await cmd.send(f"<@{user_id}> отклонил дуэль с <@{duel['challenger']}>.")
         else:
-            await cmd.reply("Использование: !duet @тег [ставка] ИЛИ !duel accept/decline")
+            await cmd.reply("Использование: !duel @тег [ставка] ИЛИ !duel accept/decline")
             return
 
     async def cmd_duel(self, cmd):
@@ -123,7 +123,7 @@ class DuelCog:
         parts = cmd.parameter.strip().split()
 
         if len(parts) == 0:
-            await cmd.reply("Использование: !duet @тег [ставка] ИЛИ !duel accept/decline")
+            await cmd.reply("Использование: !duel @тег [ставка] ИЛИ !duel accept/decline")
             return
         elif len(parts) == 1:
             await self.handle_duel_response(cmd.user.id, parts[0], cmd)
