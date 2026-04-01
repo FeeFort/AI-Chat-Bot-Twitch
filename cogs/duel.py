@@ -1,9 +1,15 @@
+import logging
 import aiohttp
 import asyncio
 import os
 import random
 from pymongo import MongoClient
 from dotenv import load_dotenv
+
+logging.basicConfig(
+    level=logging.DEBUG,  # Минимальный уровень логов
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
 
 load_dotenv()
 
@@ -113,7 +119,7 @@ class DuelCog:
             return
 
     async def cmd_duel(self, cmd):
-        print(self.active_duels)
+        logging.debug(self.active_duels)
         parts = cmd.parameter.strip().split()
 
         if len(parts) == 0:
