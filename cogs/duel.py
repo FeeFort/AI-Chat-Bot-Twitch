@@ -87,7 +87,9 @@ class DuelCog:
         Обработка ответа пользователя на дуэль
         """
         if user_id not in self.active_duels:
+            print(self.active_duels)
             await cmd.reply("У вас нет активных дуэлей!")
+            return
 
         duel = self.active_duels[user_id]
 
