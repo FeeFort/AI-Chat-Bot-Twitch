@@ -11,9 +11,8 @@ CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
 CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET")
 
 USER_SCOPE = [
-    AuthScope.USER_BOT,
-    AuthScope.USER_READ_CHAT,
-    AuthScope.USER_WRITE_CHAT,
+    AuthScope.CHANNEL_READ_REDEMPTIONS,
+    AuthScope.CHANNEL_MANAGE_REDEMPTIONS
 ]
 
 async def main():

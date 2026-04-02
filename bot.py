@@ -31,6 +31,11 @@ USER_SCOPE = [
     AuthScope.USER_WRITE_CHAT,
 ]
 
+BROADCASTER_SCOPE = [
+    AuthScope.CHANNEL_READ_REDEMPTIONS,
+    AuthScope.CHANNEL_MANAGE_REDEMPTIONS
+]
+
 MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
 
@@ -167,6 +172,11 @@ class Bot:
         self.CHANNEL_NAME = os.getenv("TWITCH_CHANNEL_NAME")
         self.TOKEN = os.getenv("TWITCH_USER_ACCESS_TOKEN")
         self.REFRESH_TOKEN = os.getenv("TWITCH_USER_REFRESH_TOKEN")
+
+        self.BROADCASTER_CLIENT_ID = os.getenv("BROADCASTER_CLIENT_ID")
+        self.BROADCASTER_CLIENT_SECRET = os.getenv("BROADCASTER_CLIENT_SECRET")
+        self.BROADCASTER_TOKEN = os.getenv("BROADCASTER_USER_ACCESS_TOKEN")
+        self.BROADCASTER_REFRESH_TOKEN = os.getenv("BROADCASTER_USER_REFRESH_TOKEN")
 
         self.cogs = []
         self.commands = {}
@@ -441,51 +451,85 @@ class Bot:
 
     async def on_channel_points_redeem(self, data):
         event = data.event
+        print(event)
 
-        if event.reward.title == "5000":
-            await self.find_or_create_user(event.chatter_user_id)
-            collection.update_one({"_id": event.chatter_user_id}, {"$inc": {"balance": 5000}})
-            await self.send_chat_message_api(
-                self.BROADCASTER_ID,
-                self.BOT_USER_ID,
-                f"@{event.user_login} купил награду: {event.reward.title}. На баланс начислено 5000 монет.",
-            )
+        if event.reward.title == "Пополнить 5.000 монет":
+            await self.find_or_create_user(event.user_id)
+            collection.update_one({"_id": event.user_id}, {"$inc": {"balance": 5000}})
 
     # =====================================================
     # runtime
     # =====================================================
 
     async def run(self):
+        # -----------------------
+        # Подключение бота
+        # -----------------------
         twitch = await Twitch(self.CLIENT_ID, self.CLIENT_SECRET, authenticate_app=False)
         await twitch.set_user_authentication(self.TOKEN, USER_SCOPE, self.REFRESH_TOKEN)
-
         self.TWITCH_APP = twitch
 
+        # Получаем ID канала и ID бота
         user = await first(twitch.get_users(logins=self.CHANNEL_NAME))
         self.BROADCASTER_ID = user.id
 
-        bot_user = await first(twitch.get_users())
+        # Указываем явный login бота, чтобы BOT_USER_ID не был None
+        bot_user = await first(twitch.get_users(logins=[self.BOT_LOGIN]))
         self.BOT_USER_ID = bot_user.id
 
+        # -----------------------
+        # Загрузка когов
+        # -----------------------
         for i in os.listdir("./cogs"):
             if i.endswith(".py") and not i.startswith("_"):
                 self.load_extension(i[:-3])
 
-        eventsub = EventSubWebsocket(twitch)
-        eventsub.start()
+        # -----------------------
+        # EventSub для бота (чат, стрим онлайн/оффлайн)
+        # -----------------------
+        eventsub_bot = EventSubWebsocket(twitch)
+        eventsub_bot.start()
 
-        print("Бот подключен. Подписываюсь на EventSub...")
-        await eventsub.listen_channel_chat_message(self.BROADCASTER_ID, self.BOT_USER_ID, self.on_message)
-        await eventsub.listen_stream_online(self.BROADCASTER_ID, self.on_stream_online)
-        await eventsub.listen_stream_offline(self.BROADCASTER_ID, self.on_stream_offline)
-        #await eventsub.listen_channel_points_custom_reward_redemption_add(self.BROADCASTER_ID, self.on_channel_points_redeem)
+        print("Бот подключен. Подписываюсь на EventSub (чат и стрим)...")
+        await eventsub_bot.listen_channel_chat_message(self.BROADCASTER_ID, self.BOT_USER_ID, self.on_message)
+        await eventsub_bot.listen_stream_online(self.BROADCASTER_ID, self.on_stream_online)
+        await eventsub_bot.listen_stream_offline(self.BROADCASTER_ID, self.on_stream_offline)
+
+        # -----------------------
+        # EventSub для стримера (channel points)
+        # -----------------------
+        twitch_streamer = await Twitch(
+            self.CLIENT_ID,
+            self.CLIENT_SECRET,
+            authenticate_app=False
+        )
+        await twitch_streamer.set_user_authentication(
+            self.BROADCASTER_TOKEN,
+            BROADCASTER_SCOPE,
+            self.BROADCASTER_REFRESH_TOKEN
+        )
+
+        eventsub_streamer = EventSubWebsocket(twitch_streamer)
+        eventsub_streamer.start()
+
+        print("Подключен EventSub стримера для channel points...")
+        await eventsub_streamer.listen_channel_points_custom_reward_redemption_add(
+            self.BROADCASTER_ID,
+            self.on_channel_points_redeem
+        )
+
         print(f"Подключено к каналу: {self.CHANNEL_NAME}")
 
+        # -----------------------
+        # Ожидание событий
+        # -----------------------
         try:
             await asyncio.Event().wait()
         finally:
-            await eventsub.stop()
+            await eventsub_bot.stop()
+            await eventsub_streamer.stop()
             await twitch.close()
+            await twitch_streamer.close()
 
 
 # =========================================================
