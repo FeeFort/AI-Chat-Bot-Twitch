@@ -1,5 +1,4 @@
 import os
-import aiohttp
 from pymongo import MongoClient
 import random
 from dotenv import load_dotenv
@@ -55,8 +54,8 @@ class RouletteCog:
         roll = random.choice(roulette)
 
         if roll_expect == roll:
-            collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": bet}})
-            await cmd.reply(f"Рулетка сыграла! Вам начислено pa1kaCoin {bet * 2} монет.")
+            collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": int(bet * 0.5)}})
+            await cmd.reply(f"Рулетка сыграла! Вам начислено pa1kaCoin {int(bet * 1.5)} монет.")
         else:
             collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": -bet}})
             await cmd.reply(f"Рулетка не сыграла.")
