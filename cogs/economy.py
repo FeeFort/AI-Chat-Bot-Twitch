@@ -75,10 +75,10 @@ class EconomyCog:
 
         if action == "add":
             collection.update_one({"_id": target_user_id}, {"$inc": {"balance": amount}})
-            await cmd.reply(f"Пользователю @{target_login} начислено {amount} монет.")
+            await cmd.reply(f"Пользователю @{target_login} начислено pa1kaCoin {amount} монет.")
         elif action == "remove":
             collection.update_one({"_id": target_user_id}, {"$inc": {"balance": -amount}})
-            await cmd.reply(f"У пользователя @{target_login} снято {amount} монет.")
+            await cmd.reply(f"У пользователя @{target_login} снято pa1kaCoin {amount} монет.")
 
     async def cmd_balance(self, cmd):
         parts = cmd.parameter.strip().split()
@@ -86,7 +86,7 @@ class EconomyCog:
         if len(parts) == 0:
             await self.find_or_create_user(cmd.user.id)
             user = collection.find_one({"_id": cmd.user.id})
-            await cmd.reply(f"@{cmd.user.name}, ваш баланс: {user["balance"]} монет.")
+            await cmd.reply(f"@{cmd.user.name}, ваш баланс: pa1kaCoin {user["balance"]} монет.")
         else:
             target_login = parts[0].lstrip("@").lower()
             target_user_id = await self.get_user_id_by_login(self.bot.CLIENT_ID, self.bot.APP_ACCESS_TOKEN, target_login)
@@ -97,7 +97,7 @@ class EconomyCog:
 
             await self.find_or_create_user(target_user_id)
             user = collection.find_one({"_id": target_user_id})
-            await cmd.reply(f"@{cmd.user.name}, баланс пользователя @{target_login}: {user["balance"]} монет.")
+            await cmd.reply(f"@{cmd.user.name}, баланс пользователя @{target_login}: pa1kaCoin {user["balance"]} монет.")
 
 
 def setup(bot):

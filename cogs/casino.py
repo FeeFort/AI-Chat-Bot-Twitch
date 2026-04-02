@@ -98,24 +98,24 @@ class CasinoCog:
 
         # Тройные совпадения с разными джекпотами
         if slot1 == slot2 == slot3 == "7️⃣":
-            comment = f"СУПЕРДЖЕКПОТ! НЕВЕРОЯТНО! Вам начислено {bet * 1000} 🎉"
+            comment = f"СУПЕРДЖЕКПОТ! НЕВЕРОЯТНО! Вам начислено pa1kaCoin {bet * 1000} монет 🎉"
             multiplier = 1000
 
         elif slot1 == slot2 == slot3 == "💎":
-            comment = f"АЛМАЗНЫЙ ДЖЕКПОТ! ВОТ ЭТО УДАЧА! Вам начислено {bet * 500} 💎"
+            comment = f"АЛМАЗНЫЙ ДЖЕКПОТ! ВОТ ЭТО УДАЧА! Вам начислено pa1kaCoin {bet * 500} монет 💎"
             multiplier = 500
 
         elif slot1 == slot2 == slot3 == "👑":
-            comment = f"КОРОЛЕВСКИЙ СУПЕРДЖЕКПОТ, вам начислено {bet * 100}! 👑"
+            comment = f"КОРОЛЕВСКИЙ СУПЕРДЖЕКПОТ, вам начислено pa1kaCoin {bet * 100}! 👑"
             multiplier = 100
 
         elif slot1 == slot2 == slot3:
-            comment = f"ДЖЕКПОТ! Победитель по жизни, вам начислено {bet * 2}! 🍀"
+            comment = f"ДЖЕКПОТ! Победитель по жизни, вам начислено pa1kaCoin {bet * 2} монет! 🍀"
             multiplier = 2
 
         # Любая пара
         elif slot1 == slot2 or slot2 == slot3 or slot1 == slot3:
-            comment = f"Утешительный приз, вам будет возвращена половина вашей ставки: {bet * 0.5}! Хоть что-то 🙂"
+            comment = f"Утешительный приз, вам будет возвращена половина вашей ставки: pa1kaCoin {bet ** 0.5} монет! Хоть что-то 🙂"
             multiplier = 0.5
 
         # Ничего
@@ -166,7 +166,7 @@ class CasinoCog:
 
         user = collection.find_one({"_id": cmd.user.id})
         if user["balance"] < bet:
-            await cmd.reply("Вы не можете поставить ставку, которая больше вашего баланса!")
+            await cmd.reply("У вас недостаточно средств!")
             return
 
         self.validate_loot_table(LOOT_TABLE)
@@ -174,7 +174,7 @@ class CasinoCog:
         result = self.spin_slots(bet, LOOT_TABLE)
 
         collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": -bet}})
-        collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": bet * result["multiplier"]}})
+        collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": bet ** result["multiplier"]}})
 
         await cmd.reply(f"@{cmd.user.name}: {result['slot1']} {result['slot2']} {result['slot3']} - {result['comment']}")
 

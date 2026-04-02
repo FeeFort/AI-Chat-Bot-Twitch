@@ -111,7 +111,7 @@ class DuelCog:
             collection.update_one({"_id": winner}, {"$inc": {"balance": duel['bet'] * 2}})
             collection.update_one({"_id": loser}, {"$inc": {"balance": -duel['bet']}})
 
-            await cmd.send(f"Дуэль! Победитель: @{winner_name}, он получает {duel['bet'] * 2} монет! ")
+            await cmd.send(f"Дуэль! Победитель: @{winner_name}, он получает pa1kaCoin {duel['bet'] * 2} монет! ")
 
         elif message.lower() == "decline":
             duel["task"].cancel()
