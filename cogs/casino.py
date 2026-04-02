@@ -115,7 +115,7 @@ class CasinoCog:
 
         # Любая пара
         elif slot1 == slot2 or slot2 == slot3 or slot1 == slot3:
-            comment = f"Утешительный приз, вам будет возвращена половина вашей ставки: pa1kaCoin {bet ** 0.5} монет! Хоть что-то 🙂"
+            comment = f"Утешительный приз, вам будет возвращена половина вашей ставки: pa1kaCoin {int(bet * 0.5)} монет! Хоть что-то 🙂"
             multiplier = 0.5
 
         # Ничего
@@ -174,7 +174,7 @@ class CasinoCog:
         result = self.spin_slots(bet, LOOT_TABLE)
 
         collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": -bet}})
-        collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": bet ** result["multiplier"]}})
+        collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": int(bet * result["multiplier"])}})
 
         await cmd.reply(f"@{cmd.user.name}: {result['slot1']} {result['slot2']} {result['slot3']} - {result['comment']}")
 
