@@ -193,6 +193,7 @@ class Bot:
         self.MENTION_RE = re.compile(r"^@?([a-zA-Z0-9_]{4,25})(?:\s+(.*))?$")
 
         self.TWITCH_APP = None
+        self.TWITCH_BROADCASTER_APP = None
         self.BROADCASTER_ID = None
         self.BOT_USER_ID = None
         self.APP_ACCESS_TOKEN = None
@@ -499,8 +500,8 @@ class Bot:
         # EventSub для стримера (channel points)
         # -----------------------
         twitch_streamer = await Twitch(
-            self.CLIENT_ID,
-            self.CLIENT_SECRET,
+            self.BROADCASTER_CLIENT_ID,
+            self.BROADCASTER_CLIENT_SECRET,
             authenticate_app=False
         )
         await twitch_streamer.set_user_authentication(
@@ -508,6 +509,7 @@ class Bot:
             BROADCASTER_SCOPE,
             self.BROADCASTER_REFRESH_TOKEN
         )
+        self.TWITCH_BROADCASTER_APP = twitch_streamer
 
         eventsub_streamer = EventSubWebsocket(twitch_streamer)
         eventsub_streamer.start()

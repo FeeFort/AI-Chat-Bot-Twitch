@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
-CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET")
+CLIENT_ID = os.getenv("BROADCASTER_CLIENT_ID")
+CLIENT_SECRET = os.getenv("BROADCASTER_CLIENT_SECRET")
 
 USER_SCOPE = [
     AuthScope.CHANNEL_READ_REDEMPTIONS,
