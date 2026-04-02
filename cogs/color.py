@@ -81,7 +81,5 @@ class ColorCog:
             collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": -bet}})
             await cmd.reply(f"Выпал {self.colors_info[color]["emoji"]} {self.colors_info[color]["ru"]}. Цвет не угадан.")
 
-        await cmd.reply("")
-
 def setup(bot):
     return ColorCog(bot)
