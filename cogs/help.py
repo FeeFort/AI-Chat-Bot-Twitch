@@ -8,7 +8,7 @@ class HelpCog:
         }
 
     async def cmd_help(self, cmd):
-        await cmd.reply("Ознакомиться со списком команд: https://feefort.github.io/")
+        await cmd.reply("Ознакомиться со списком команд: https://feefort.github.io")
 
 def setup(bot):
     return HelpCog(bot)
