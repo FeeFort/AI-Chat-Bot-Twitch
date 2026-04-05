@@ -343,7 +343,7 @@ class Bot:
             reply_parent_msg_id=getattr(reply, "parent_message_id", None) if reply else None,
             reply_parent_msg_body=getattr(reply, "parent_message_body", None) if reply else None,
             reply_parent_user_login=getattr(reply, "parent_user_login", None) if reply else None,
-            user_mod=self._has_badge(badges, "moderator"),
+            user_mod=self._has_badge(badges, "moderator") or self._has_badge(badges, "lead_moderator"),
         )
 
     def _build_chat_command(self, msg: ChatMessage) -> ChatCommand:

@@ -1,7 +1,10 @@
 ﻿from openai import OpenAI
 from safety import should_block_user_input, get_block_message, should_block_model_output
+import openai
 
 client = OpenAI(
+    timeout=20.0,
+    max_retries=0,
     api_key="sk-aitunnel-wfYDeL4tlaSyNcPZnDBD88ykPBOHU48E",
     base_url="https://api.aitunnel.ru/v1/"
 )
@@ -144,20 +147,23 @@ def getAiResponse(username, user_text, history):
         print("INPUT BLOCKED:", user_check.reasons, "|", user_text)
         return get_block_message(user_check, stage="input")
 
-    # вызов модели
-    answer = client.chat.completions.create(
-        model="deepseek-v3.2",
-        messages=[
-            {
-                "role": "system",
-                "content": prompt
-            },
-            {
-                "role": "user",
-                "content": user_text,
-            }
-        ]
-    )
+    try:
+        # вызов модели
+        answer = client.chat.completions.create(
+            model="deepseek-v3.2",
+            messages=[
+                {
+                    "role": "system",
+                    "content": prompt
+                },
+                {
+                    "role": "user",
+                    "content": user_text,
+                }
+            ]
+        )
+    except openai.APITimeoutError:
+        return "Превышен интервал ожидания на ответ."
 
     # ПОСЛЕ ответа LLM
     output_check = should_block_model_output(answer.choices[0].message.content)
