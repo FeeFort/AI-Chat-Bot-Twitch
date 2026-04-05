@@ -152,6 +152,10 @@ class DuelCog:
                 await cmd.reply("У вас недостаточно средств!")
                 return
 
+            if target_id == challenger_id:
+                await cmd.reply("Вы не можете предложить дуэль самому себе!")
+                return
+
             await self.create_duel(challenger_id, target_id, cmd.user.name, target, bet, cmd)
 
 def setup(bot):
