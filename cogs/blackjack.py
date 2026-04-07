@@ -103,19 +103,19 @@ class BlackjackCog:
         if sumBot > 21 and sumUser <= 21:
             collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": int(bet * 3)}})
             await cmd.reply(
-                f"Бот перебрал! Пользователь выиграл! "
+                f"Бот перебрал! @{cmd.user.name} выиграл! "
                 f"Выигрыш: pa1kaCoin {bet * 3} монет. "
                 f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма пользователя: {sumUser} (карты {card1user} {card2user})."
+                f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
             )
             return
 
         # 3. Пользователь перебрал
         if sumUser > 21 and sumBot <= 21:
             await cmd.reply(
-                f"Пользователь перебрал. Бот выиграл. "
+                f"@{cmd.user.name} перебрал. Бот выиграл. "
                 f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма пользователя: {sumUser} (карты {card1user} {card2user})."
+                f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
             )
             return
 
@@ -125,7 +125,7 @@ class BlackjackCog:
             await cmd.reply(
                 f"Оба выбили BLACKJACK! Ставка pa1kaCoin {bet} возвращена на баланс. "
                 f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма пользователя: {sumUser} (карты {card1user} {card2user})."
+                f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
             )
             return
 
@@ -134,7 +134,7 @@ class BlackjackCog:
             await cmd.reply(
                 f"Бот выбил BLACKJACK. "
                 f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма пользователя: {sumUser} (карты {card1user} {card2user})."
+                f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
             )
             return
 
@@ -142,10 +142,10 @@ class BlackjackCog:
         if sumUser == 21 and sumBot != 21:
             collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": int(bet * 5)}})
             await cmd.reply(
-                f"Пользователь выбил BLACKJACK! "
+                f"@{cmd.user.name} выбил BLACKJACK! "
                 f"Выигрыш: pa1kaCoin {bet * 5} монет. "
                 f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма пользователя: {sumUser} (карты {card1user} {card2user})."
+                f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
             )
             return
 
@@ -154,17 +154,17 @@ class BlackjackCog:
             await cmd.reply(
                 f"Бот выиграл. "
                 f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма пользователя: {sumUser} (карты {card1user} {card2user})."
+                f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
             )
             return
 
         if sumUser > sumBot:
             collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": int(bet * 3)}})
             await cmd.reply(
-                f"Пользователь выиграл! "
+                f"@{cmd.user.name} выиграл! "
                 f"Выигрыш: pa1kaCoin {bet * 3} монет. "
                 f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма пользователя: {sumUser} (карты {card1user} {card2user})."
+                f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
             )
             return
 
@@ -173,7 +173,7 @@ class BlackjackCog:
         await cmd.reply(
             f"Ничья! Ставка pa1kaCoin {bet} возвращена на баланс. "
             f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-            f"Сумма пользователя: {sumUser} (карты {card1user} {card2user})."
+            f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
         )
 
 
