@@ -61,6 +61,10 @@ class TransferCog:
         target_login = parts[0].lstrip("@").lower()
         amount = int(parts[1])
 
+        if target_login == cmd.user.name:
+            await cmd.reply("Вы не можете перевести самому себе!")
+            return
+
         target_user_id = await self.get_user_id_by_login(self.bot.CLIENT_ID, self.bot.APP_ACCESS_TOKEN, target_login)
         if target_user_id is None:
             await cmd.reply("Пользователь не найден")
