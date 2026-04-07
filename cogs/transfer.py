@@ -19,7 +19,7 @@ class TransferCog:
 
     def get_commands(self):
         return {
-            "transfer": self.cmd_transfer
+            "pay": self.cmd_pay
         }
 
     async def get_user_id_by_login(self, client_id: str, access_token: str, login: str) -> str | None:
@@ -51,11 +51,11 @@ class TransferCog:
                 "balance": 0
             })
 
-    async def cmd_transfer(self, cmd):
+    async def cmd_pay(self, cmd):
         parts = cmd.parameter.strip().split()
 
         if len(parts) != 2:
-            await cmd.reply("Использование: !transfer [@тег] [кол-во]")
+            await cmd.reply("Использование: !pay [@тег] [кол-во]")
             return
 
         target_login = parts[0].lstrip("@").lower()

@@ -86,7 +86,7 @@ class DuelCog:
             await asyncio.sleep(30)
             if target_id in self.active_duels:
                 self.active_duels.pop(target_id)
-                await cmd.send(f"@{target_id} не ответил на вызов, дуэль отменена.")
+                await cmd.send(f"@{target_name} не ответил на вызов, дуэль отменена.")
 
         duel["task"] = asyncio.create_task(duel_timeout())
 
