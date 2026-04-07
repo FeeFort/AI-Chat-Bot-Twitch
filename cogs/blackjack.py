@@ -90,90 +90,101 @@ class BlackjackCog:
         sumBot = self.cards[card1bot] + self.cards[card2bot]
         sumUser = self.cards[card1user] + self.cards[card2user]
 
+        def is_blackjack(card1, card2):
+            ten_cards = {"10", "J", "Q", "K"}
+            return (
+                    (card1 == "A" and card2 in ten_cards) or
+                    (card2 == "A" and card1 in ten_cards)
+            )
+
+        bot_blackjack = is_blackjack(card1bot, card2bot)
+        user_blackjack = is_blackjack(card1user, card2user)
+
+        result_text = (
+            f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
+            f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
+        )
+
         # 1. Оба перебрали
         if sumBot > 21 and sumUser > 21:
-            await cmd.reply(
-                f"Оба проиграли. "
-                f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма пользователя: {sumUser} (карты {card1user} {card2user})."
-            )
+            await cmd.reply(f"Оба проиграли. {result_text}")
             return
 
         # 2. Бот перебрал
         if sumBot > 21 and sumUser <= 21:
-            collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": int(bet * 3)}})
+            collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": bet * 2}})
             await cmd.reply(
                 f"Бот перебрал! @{cmd.user.name} выиграл! "
-                f"Выигрыш: pa1kaCoin {bet * 3} монет. "
-                f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
+                f"Выигрыш: pa1kaCoin {bet * 2}. {result_text}"
             )
             return
 
         # 3. Пользователь перебрал
         if sumUser > 21 and sumBot <= 21:
+            await cmd.reply(f"@{cmd.user.name} перебрал. Бот выиграл. {result_text}")
+            return
+
+        # 4. Оба BLACKJACK
+        if bot_blackjack and user_blackjack:
+            collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": bet}})
             await cmd.reply(
-                f"@{cmd.user.name} перебрал. Бот выиграл. "
-                f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
+                f"У обоих BLACKJACK! Ставка pa1kaCoin {bet} возвращена на баланс. {result_text}"
             )
             return
 
-        # 4. Оба выбили 21
+        # 5. BLACKJACK у бота
+        if bot_blackjack and not user_blackjack:
+            await cmd.reply(f"Бот выбил BLACKJACK. {result_text}")
+            return
+
+        # 6. BLACKJACK у пользователя
+        if user_blackjack and not bot_blackjack:
+            collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": bet * 5}})
+            await cmd.reply(
+                f"@{cmd.user.name} выбил BLACKJACK! "
+                f"Выигрыш: pa1kaCoin {bet * 5}. {result_text}"
+            )
+            return
+
+        # 7. Оба просто 21
         if sumBot == 21 and sumUser == 21:
             collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": bet}})
             await cmd.reply(
-                f"Оба выбили BLACKJACK! Ставка pa1kaCoin {bet} возвращена на баланс. "
-                f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
+                f"Оба выбили 21. Ставка pa1kaCoin {bet} возвращена на баланс. {result_text}"
             )
             return
 
-        # 5. Бот выбил 21
+        # 8. Просто 21 у бота
         if sumBot == 21 and sumUser != 21:
-            await cmd.reply(
-                f"Бот выбил BLACKJACK. "
-                f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
-            )
+            await cmd.reply(f"Бот выбил 21. {result_text}")
             return
 
-        # 6. Пользователь выбил 21
+        # 9. Просто 21 у пользователя
         if sumUser == 21 and sumBot != 21:
-            collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": int(bet * 5)}})
+            collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": bet * 3}})
             await cmd.reply(
-                f"@{cmd.user.name} выбил BLACKJACK! "
-                f"Выигрыш: pa1kaCoin {bet * 5} монет. "
-                f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
+                f"@{cmd.user.name} выбил 21! "
+                f"Выигрыш: pa1kaCoin {bet * 3}. {result_text}"
             )
             return
 
-        # 7. Обычное сравнение сумм
+        # 10. Обычная победа по сумме
         if sumBot > sumUser:
-            await cmd.reply(
-                f"Бот выиграл. "
-                f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
-            )
+            await cmd.reply(f"Бот выиграл. {result_text}")
             return
 
         if sumUser > sumBot:
-            collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": int(bet * 3)}})
+            collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": bet * 2}})
             await cmd.reply(
                 f"@{cmd.user.name} выиграл! "
-                f"Выигрыш: pa1kaCoin {bet * 3} монет. "
-                f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-                f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
+                f"Выигрыш: pa1kaCoin {bet * 2}. {result_text}"
             )
             return
 
-        # 8. Ничья
+        # 11. Ничья
         collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": bet}})
         await cmd.reply(
-            f"Ничья! Ставка pa1kaCoin {bet} возвращена на баланс. "
-            f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-            f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
+            f"Ничья! Ставка pa1kaCoin {bet} возвращена на баланс. {result_text}"
         )
 
 
