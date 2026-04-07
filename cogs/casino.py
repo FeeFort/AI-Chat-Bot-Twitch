@@ -19,13 +19,13 @@ LOOT_TABLE: List[Dict[str, float | str]] = [
         {"item": "7️⃣", "chance_percent": 0.1},
         {"item": "👑", "chance_percent": 1.0},
         {"item": "💎", "chance_percent": 2.0},
-        {"item": "🍌", "chance_percent": 6.0},
-        {"item": "🍓", "chance_percent": 10.0},
-        {"item": "🍎", "chance_percent": 15.0},
-        {"item": "🍇", "chance_percent": 16.0},
-        {"item": "🍋", "chance_percent": 20.0},
-        {"item": "🍊", "chance_percent": 20.0},
-        {"item": "🍒", "chance_percent": 9.9},
+        {"item": "🍌", "chance_percent": 13.84},
+        {"item": "🍓", "chance_percent": 13.84},
+        {"item": "🍎", "chance_percent": 13.84},
+        {"item": "🍇", "chance_percent": 13.84},
+        {"item": "🍋", "chance_percent": 13.84},
+        {"item": "🍊", "chance_percent": 13.84},
+        {"item": "🍒", "chance_percent": 13.84},
     ]
 
 class CasinoCog:
