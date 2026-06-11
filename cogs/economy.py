@@ -16,6 +16,7 @@ print("Подключение успешно")
 class EconomyCog:
     def __init__(self, bot):
         self.bot = bot
+        self.cheat = False
 
     def get_commands(self):
         return {
@@ -53,6 +54,10 @@ class EconomyCog:
             })
 
     async def cmd_coins(self, cmd):
+        if not self.cheat:
+            await cmd.reply("Команда отключена.")
+            return
+
         is_broadcaster = cmd.user.name.lower() == self.bot.CHANNEL_NAME.lower()
         is_creator = cmd.user.id == "609907557"
 

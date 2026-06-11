@@ -18,10 +18,30 @@ print("Подключение успешно")
 class BlackjackCog:
     def __init__(self, bot):
         self.bot = bot
-        self.cards_list = ["6", "7", "8", "9", "10", "J", "Q", "K", "A"]
-        self.cards = {
-            "6": 6, "7": 7, "8": 8, "9": 9, "10": 10, "J": 10, "Q": 10, "K": 10, "A": 11
+        # Теперь здесь все карты от 2 до Туза
+        self.ranks = {
+            "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, 
+            "8": 8, "9": 9, "10": 10, "J": 10, "Q": 10, "K": 10, "A": 11
         }
+        self.suits = ['♥️', '♦️', '♠️', '♣️']
+
+    def get_full_deck(self):
+        deck = []
+        for suit in self.suits:
+            for rank, value in self.ranks.items():
+                deck.append({"rank": rank, "value": value, "suit": suit})
+        return deck
+    
+    def calculate_hand_value(self, hand):
+        value = sum(card["value"] for card in hand)
+        # Считаем количество тузов в руке
+        aces = sum(1 for card in hand if card["rank"] == "A")
+        
+        # Пока сумма > 21 и есть тузы, которые считаются за 11 -> превращаем их в 1
+        while value > 21 and aces > 0:
+            value -= 10
+            aces -= 1
+        return value
 
     def get_commands(self):
         return {
@@ -82,27 +102,34 @@ class BlackjackCog:
 
         collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": -bet}})
 
-        card1bot = random.choice(self.cards_list)
-        card2bot = random.choice(self.cards_list)
-        card1user = random.choice(self.cards_list)
-        card2user = random.choice(self.cards_list)
+        # Создаем колоду
+        deck = self.get_full_deck()
+        random.shuffle(deck)
 
-        sumBot = self.cards[card1bot] + self.cards[card2bot]
-        sumUser = self.cards[card1user] + self.cards[card2user]
+        # Берем карты
+        card1bot, card2bot = deck.pop(), deck.pop()
+        card1user, card2user = deck.pop(), deck.pop()
 
-        def is_blackjack(card1, card2):
-            ten_cards = {"10", "J", "Q", "K"}
-            return (
-                    (card1 == "A" and card2 in ten_cards) or
-                    (card2 == "A" and card1 in ten_cards)
-            )
+        # Собираем карты в списки
+        hand_bot = [card1bot, card2bot]
+        hand_user = [card1user, card2user]
+
+        # Считаем суммы через новую функцию
+        sumBot = self.calculate_hand_value(hand_bot)
+        sumUser = self.calculate_hand_value(hand_user)
+
+        # Исправленная функция проверки
+        def is_blackjack(c1, c2):
+            return (c1["rank"] == "A" and c2["value"] == 10) or \
+                   (c2["rank"] == "A" and c1["value"] == 10)
 
         bot_blackjack = is_blackjack(card1bot, card2bot)
         user_blackjack = is_blackjack(card1user, card2user)
 
+        # Исправленный вывод (обращаемся к ["rank"])
         result_text = (
-            f"Сумма бота: {sumBot} (карты {card1bot} {card2bot}). "
-            f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user} {card2user})."
+            f"Сумма бота: {sumBot} (карты {card1bot['rank']}{card1bot['suit']} {card2bot['rank']}{card2bot['suit']}). "
+            f"Сумма @{cmd.user.name}: {sumUser} (карты {card1user['rank']}{card1user['suit']} {card2user['rank']}{card2user['suit']})."
         )
 
         # 1. Оба перебрали
@@ -139,10 +166,10 @@ class BlackjackCog:
 
         # 6. BLACKJACK у пользователя
         if user_blackjack and not bot_blackjack:
-            collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": bet * 5}})
+            collection.update_one({"_id": cmd.user.id}, {"$inc": {"balance": bet * 3}})
             await cmd.reply(
                 f"@{cmd.user.name} выбил BLACKJACK! "
-                f"Выигрыш: pa1kaCoin {bet * 5}. {result_text}"
+                f"Выигрыш: pa1kaCoin {bet * 3}. {result_text}"
             )
             return
 
