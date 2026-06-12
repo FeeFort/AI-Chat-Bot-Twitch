@@ -29,6 +29,7 @@ USER_SCOPE = [
     AuthScope.USER_BOT,
     AuthScope.USER_READ_CHAT,
     AuthScope.USER_WRITE_CHAT,
+    AuthScope.MODERATOR_READ_CHATTERS,
 ]
 
 BROADCASTER_SCOPE = [
@@ -273,6 +274,22 @@ class Bot:
 
                 resp.raise_for_status()
                 return await resp.json()
+
+    async def get_chatters(self) -> list[dict[str, str]]:
+        response = await self.TWITCH_APP.get_chatters(
+            broadcaster_id=self.BROADCASTER_ID,
+            moderator_id=self.BOT_USER_ID,
+            first=1000,
+        )
+
+        return [
+            {
+                "id": chatter.user_id,
+                "login": chatter.user_login,
+                "name": chatter.user_name,
+            }
+            for chatter in response
+        ]
 
     # =====================================================
     # history helpers
